@@ -3,6 +3,9 @@ enum ConnectionStatus {
   /// Client is disconnected from the server
   disconnected,
 
+  /// Client is attempting to connect to the server
+  connecting,
+
   /// Client is connected to the server but not registered
   connected,
 

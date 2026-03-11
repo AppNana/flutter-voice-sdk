@@ -5,7 +5,7 @@ class Constants {
   static const int retryRegisterTime = 3;
   static const int retryConnectTime = 3;
   static const int gatewayResponseDelay = 3000;
-  static const int reconnectTimer = 1000;
+  static const int reconnectTimer = 2000;
 
   // Reconnection timeout in milliseconds (60 seconds)
   // This is the maximum time allowed for a call to be in the RECONNECTING or DROPPED  state

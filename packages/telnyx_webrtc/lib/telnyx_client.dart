@@ -8,8 +8,7 @@ import 'package:telnyx_webrtc/model/network_reason.dart';
 import 'package:telnyx_webrtc/model/tx_ice_server.dart';
 import 'package:telnyx_webrtc/model/verto/receive/update_media_response.dart';
 import 'package:telnyx_webrtc/model/verto/send/attach_call_message.dart';
-import 'package:telnyx_webrtc/peer/peer.dart'
-    if (dart.library.html) 'package:telnyx_webrtc/peer/web/peer.dart';
+import 'package:telnyx_webrtc/peer/peer.dart' if (dart.library.html) 'package:telnyx_webrtc/peer/web/peer.dart';
 import 'package:telnyx_webrtc/call.dart';
 import 'package:telnyx_webrtc/config/telnyx_config.dart';
 import 'package:telnyx_webrtc/model/gateway_state.dart';
@@ -23,8 +22,7 @@ import 'package:telnyx_webrtc/model/verto/send/gateway_request_message_body.dart
 import 'package:telnyx_webrtc/model/verto/send/login_message_body.dart';
 import 'package:telnyx_webrtc/model/verto/send/anonymous_login_message.dart';
 import 'package:telnyx_webrtc/model/telnyx_message.dart';
-import 'package:telnyx_webrtc/tx_socket.dart'
-    if (dart.library.js) 'package:telnyx_webrtc/tx_socket_web.dart';
+import 'package:telnyx_webrtc/tx_socket.dart' if (dart.library.js) 'package:telnyx_webrtc/tx_socket_web.dart';
 import 'package:telnyx_webrtc/utils/codec_utils.dart';
 import 'package:telnyx_webrtc/utils/constants.dart';
 import 'package:telnyx_webrtc/utils/logging/custom_logger.dart';
@@ -102,7 +100,6 @@ class TelnyxClient {
   CustomLogger _logger = DefaultLogger();
 
   PushMetaData? _pushMetaData;
-  bool _isAttaching = false;
   bool _debug = false;
 
   // Stores the last known connectivity result to detect actual changes.
@@ -146,7 +143,7 @@ class TelnyxClient {
       );
     };
 
-    _checkReconnection();
+    // _checkReconnection();
   }
 
   /// The current instance of [TxSocket] associated with this client
@@ -215,9 +212,7 @@ class TelnyxClient {
     return Map.fromEntries(
       calls.entries.where(
         (entry) =>
-            entry.value.callState.isActive ||
-            entry.value.callState.isDropped ||
-            entry.value.callState.isReconnecting,
+            entry.value.callState.isActive || entry.value.callState.isDropped || entry.value.callState.isReconnecting,
       ),
     );
   }
@@ -289,8 +284,7 @@ class TelnyxClient {
 
   /// The current server configuration for TURN/STUN servers.
   /// Defaults to production servers.
-  TxServerConfiguration _serverConfiguration =
-      TxServerConfiguration.production();
+  TxServerConfiguration _serverConfiguration = TxServerConfiguration.production();
 
   /// Gets the current server configuration.
   TxServerConfiguration get serverConfiguration => _serverConfiguration;
@@ -407,8 +401,6 @@ class TelnyxClient {
       // Update the state for the next change detection.
       _previousConnectivityResult = connectivityResult;
 
-      if (_isAttaching) return;
-
       if (connectivityResult.contains(ConnectivityResult.none)) {
         GlobalLogger().i('No available network types');
         _handleNetworkLost();
@@ -418,9 +410,7 @@ class TelnyxClient {
       if (connectivityResult.contains(ConnectivityResult.mobile) ||
           connectivityResult.contains(ConnectivityResult.wifi)) {
         GlobalLogger().i('Network available: ${connectivityResult.join(", ")}');
-        if (!_isAttaching) {
-          _handleNetworkReconnection(NetworkReason.networkSwitch);
-        }
+        _handleNetworkReconnection(NetworkReason.networkSwitch);
       }
     });
   }
@@ -543,8 +533,7 @@ class TelnyxClient {
   void _handleNetworkReconnection(NetworkReason reason) {
     // Check if autoReconnect is enabled before attempting network reconnection
     if (!_autoReconnectLogin) {
-      GlobalLogger()
-          .i('AutoReconnect is disabled, not attempting network reconnection');
+      GlobalLogger().i('AutoReconnect is disabled, not attempting network reconnection');
       for (var call in activeCalls().values) {
         call.callHandler.onCallStateChanged.call(
           CallState.dropped.withNetworkReason(NetworkReason.networkLost),
@@ -660,13 +649,11 @@ class TelnyxClient {
         sdpMid: sdpMid,
         sdpMLineIndex: sdpMLineIndex,
         candidateString: candidateString,
-        enhancedCandidateString:
-            candidateString, // Store original for now, will enhance later
+        enhancedCandidateString: candidateString, // Store original for now, will enhance later
       );
 
       // Add to pending candidates map
-      final candidates = pendingIceCandidates.putIfAbsent(callId, () => [])
-        ..add(pendingCandidate);
+      final candidates = pendingIceCandidates.putIfAbsent(callId, () => [])..add(pendingCandidate);
       GlobalLogger().i(
         'Queued ICE candidate for call $callId. Total queued: ${candidates.length}',
       );
@@ -681,8 +668,7 @@ class TelnyxClient {
   void _processQueuedIceCandidates(String callId) {
     final call = calls[callId];
     if (call == null) {
-      GlobalLogger()
-          .w('No call found for ID: $callId when processing queued candidates');
+      GlobalLogger().w('No call found for ID: $callId when processing queued candidates');
       return;
     }
 
@@ -706,8 +692,7 @@ class TelnyxClient {
             candidate.sdpMid,
             candidate.sdpMLineIndex,
           );
-          GlobalLogger()
-              .i('Successfully processed queued candidate for call $callId');
+          GlobalLogger().i('Successfully processed queued candidate for call $callId');
         } else {
           GlobalLogger().w(
             'Peer connection is null for call $callId, cannot process candidate',
@@ -831,8 +816,7 @@ class TelnyxClient {
       _pendingAnswerFromPush = true;
       // Store the device token for use when auto-answering
       // This allows the backend to dismiss the call on other devices
-      _answeredDeviceToken =
-          credentialConfig?.notificationToken ?? tokenConfig?.notificationToken;
+      _answeredDeviceToken = credentialConfig?.notificationToken ?? tokenConfig?.notificationToken;
       GlobalLogger().i(
         'TelnyxClient.handlePushNotification: Stored answeredDeviceToken: ${_answeredDeviceToken != null ? "[present]" : "null"}',
       );
@@ -866,8 +850,7 @@ class TelnyxClient {
 
     notificationParams = UserVariables(
       pushDeviceToken: notificationToken,
-      pushNotificationProvider:
-          defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
+      pushNotificationProvider: defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
     );
 
     final loginParams = LoginParams(
@@ -909,8 +892,7 @@ class TelnyxClient {
 
     notificationParams = UserVariables(
       pushDeviceToken: notificationToken,
-      pushNotificationProvider:
-          defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
+      pushNotificationProvider: defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
     );
 
     final loginParams = LoginParams(
@@ -977,8 +959,7 @@ class TelnyxClient {
     }
     try {
       if (pushMetaData?.voiceSdkId != null) {
-        txSocket.hostAddress =
-            '${_serverConfiguration.socketUrl}?voice_sdk_id=${pushMetaData?.voiceSdkId}';
+        txSocket.hostAddress = '${_serverConfiguration.socketUrl}?voice_sdk_id=${pushMetaData?.voiceSdkId}';
         GlobalLogger().i(
           'Connecting to WebSocket with voice_sdk_id :: ${pushMetaData?.voiceSdkId}',
         );
@@ -1045,12 +1026,17 @@ class TelnyxClient {
 
       txSocket.hostAddress = hostAddress;
       GlobalLogger().i('connecting to WebSocket $hostAddress');
+      // Emit connecting status before initiating the socket connection
+      if (_connectionStatus != ConnectionStatus.connecting) {
+        _connectionStatus = ConnectionStatus.connecting;
+        onConnectionStateChanged?.call(_connectionStatus);
+      }
       txSocket
         ..onOpen = () {
           _closed = false;
+          _connectRetryCounter = 0; // Reset retry counter on successful connection
           _updateConnectionState(true);
-          _isRegionFallbackAttempt =
-              false; // Reset fallback flag on successful connection
+          _isRegionFallbackAttempt = false; // Reset fallback flag on successful connection
           GlobalLogger().i(
             'TelnyxClient.connectWithToken (via _onOpen): Web Socket is now connected',
           );
@@ -1103,12 +1089,17 @@ class TelnyxClient {
 
       txSocket.hostAddress = hostAddress;
       GlobalLogger().i('connecting to WebSocket $hostAddress');
+      // Emit connecting status before initiating the socket connection
+      if (_connectionStatus != ConnectionStatus.connecting) {
+        _connectionStatus = ConnectionStatus.connecting;
+        onConnectionStateChanged?.call(_connectionStatus);
+      }
       txSocket
         ..onOpen = () {
           _closed = false;
+          _connectRetryCounter = 0; // Reset retry counter on successful connection
           _updateConnectionState(true);
-          _isRegionFallbackAttempt =
-              false; // Reset fallback flag on successful connection
+          _isRegionFallbackAttempt = false; // Reset fallback flag on successful connection
           GlobalLogger().i(
             'TelnyxClient.connectWithCredential (via _onOpen): Web Socket is now connected',
           );
@@ -1120,8 +1111,8 @@ class TelnyxClient {
         }
         ..onClose = (int closeCode, String closeReason) {
           GlobalLogger().i('Closed [$closeCode, $closeReason]!');
-          final bool wasClean =
-              WebSocketUtils.isCleanClose(closeCode, closeReason);
+          _updateConnectionState(false);
+          final bool wasClean = WebSocketUtils.isCleanClose(closeCode, closeReason);
           _onClose(wasClean, closeCode, closeReason);
         }
         ..onPing = (SocketConnectionMetrics metrics) {
@@ -1143,22 +1134,19 @@ class TelnyxClient {
   void connect() {
     GlobalLogger().i('connect()');
     if (isConnected()) {
-      GlobalLogger()
-          .i('WebSocket $_serverConfiguration.socketUrl is already connected');
+      GlobalLogger().i('WebSocket $_serverConfiguration.socketUrl is already connected');
       return;
     }
     GlobalLogger().i('connecting to WebSocket $_serverConfiguration.socketUrl');
     try {
       if (_pushMetaData != null) {
-        txSocket.hostAddress =
-            '${_serverConfiguration.socketUrl}?voice_sdk_id=${_pushMetaData?.voiceSdkId}';
+        txSocket.hostAddress = '${_serverConfiguration.socketUrl}?voice_sdk_id=${_pushMetaData?.voiceSdkId}';
         GlobalLogger().i(
           'Connecting to WebSocket with voice_sdk_id :: ${_pushMetaData?.voiceSdkId}',
         );
       } else {
         txSocket.hostAddress = _serverConfiguration.socketUrl;
-        GlobalLogger()
-            .i('connecting to WebSocket $_serverConfiguration.socketUrl');
+        GlobalLogger().i('connecting to WebSocket $_serverConfiguration.socketUrl');
       }
       txSocket
         ..onOpen = () {
@@ -1173,8 +1161,7 @@ class TelnyxClient {
         ..onClose = (int closeCode, String closeReason) {
           GlobalLogger().i('Closed [$closeCode, $closeReason]!');
           _updateConnectionState(false);
-          final bool wasClean =
-              WebSocketUtils.isCleanClose(closeCode, closeReason);
+          final bool wasClean = WebSocketUtils.isCleanClose(closeCode, closeReason);
           _onClose(wasClean, closeCode, closeReason);
         }
         ..onPing = (SocketConnectionMetrics metrics) {
@@ -1192,27 +1179,30 @@ class TelnyxClient {
   /// This method is used for both network-based reconnections and gateway failures
   /// It respects the autoReconnect settings and provides better logging
   void _reconnectToSocket() {
+    if (_closed) {
+      GlobalLogger().i('Socket is marked as closed, will not attempt to reconnect');
+      return;
+    }
+
+    if (_connectionStatus == ConnectionStatus.reconnecting) {
+      GlobalLogger().i('Already in reconnecting state, will not attempt to reconnect again');
+      return;
+    }
+
     // Set reconnecting status
     if (_connectionStatus != ConnectionStatus.reconnecting) {
       _connectionStatus = ConnectionStatus.reconnecting;
       onConnectionStateChanged?.call(_connectionStatus);
     }
 
+    txSocket.close();
+
     GlobalLogger().i(
       'Reconnecting to socket (autoReconnect: $_autoReconnectLogin, retryCount: $_connectRetryCounter)',
     );
 
-    _isAttaching = true;
-    Timer(Duration(milliseconds: Constants.gatewayResponseDelay), () {
-      _isAttaching = false;
-    });
-
-    txSocket.close();
-
     // Delay to allow connection with exponential backoff for retries
-    final delayMs = _connectRetryCounter > 0
-        ? Constants.reconnectTimer * (1 << (_connectRetryCounter - 1))
-        : 1000;
+    final delayMs = Constants.reconnectTimer;
 
     Timer(Duration(milliseconds: delayMs), () {
       if (_storedCredentialConfig != null) {
@@ -1222,12 +1212,10 @@ class TelnyxClient {
         GlobalLogger().i('Reconnecting with token config');
         connectWithToken(_storedTokenConfig!);
       } else {
-        GlobalLogger()
-            .e('No stored configuration available for socket reconnection');
+        GlobalLogger().e('No stored configuration available for socket reconnection');
         final error = TelnyxSocketError(
           errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
-          errorMessage:
-              'No stored configuration available for socket reconnection',
+          errorMessage: 'No stored configuration available for socket reconnection',
         );
         onSocketErrorReceived(error);
       }
@@ -1474,10 +1462,7 @@ class TelnyxClient {
         loginToken: config is TokenConfig ? config.sipToken : null,
         userVariables: PushUserVariables(
           pushNotificationToken: config.notificationToken!,
-          pushNotificationProvider:
-              defaultTargetPlatform == TargetPlatform.android
-                  ? 'android'
-                  : 'ios',
+          pushNotificationProvider: defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios',
         ),
       );
       final disablePushMessage = DisablePushMessage(
@@ -1725,7 +1710,6 @@ class TelnyxClient {
     _updateConnectionState(false);
     _registered = false;
     _updateConnectionStatus();
-    _onClose(true, 0, 'Client send disconnect');
     try {
       txSocket.close();
     } catch (error) {
@@ -1801,6 +1785,13 @@ class TelnyxClient {
           connectWithCredential(fallbackConfig as CredentialConfig);
         });
       }
+      // Region fallback is handling the reconnect, skip general auto-reconnect
+      return;
+    }
+
+    // General auto-reconnect for unexpected WebSocket drops (not initiated by user)
+    if (!_closed && _autoReconnectLogin && _connectionStatus != ConnectionStatus.reconnecting) {
+      _attemptReconnection();
     }
   }
 
@@ -1823,8 +1814,7 @@ class TelnyxClient {
               LogLevel.info,
               'Received WebSocket message - Contains Error :: $errorJson',
             );
-            final ReceivedResult errorResult =
-                ReceivedResult.fromJson(messageJson);
+            final ReceivedResult errorResult = ReceivedResult.fromJson(messageJson);
             final TelnyxSocketError error = TelnyxSocketError(
               errorCode: errorResult.error?.errorCode ?? 0,
               errorMessage: errorResult.error?.errorMessage ?? 'Unknown error',
@@ -1837,8 +1827,7 @@ class TelnyxClient {
               'Received WebSocket message - Contains Result :: $paramJson',
             );
 
-            final ReceivedResult stateMessage =
-                ReceivedResult.fromJson(messageJson);
+            final ReceivedResult stateMessage = ReceivedResult.fromJson(messageJson);
             final mainMessage = ReceivedMessage(
               jsonrpc: stateMessage.jsonrpc,
               method: SocketMethod.gatewayState,
@@ -1864,14 +1853,9 @@ class TelnyxClient {
                       onSocketMessageReceived.call(message);
                       if (_isCallFromPush) {
                         //sending attach Call
-                        final String platform =
-                            defaultTargetPlatform == TargetPlatform.android
-                                ? 'android'
-                                : 'ios';
-                        const String pushEnvironment =
-                            kDebugMode ? 'development' : 'production';
-                        final AttachCallMessage attachCallMessage =
-                            AttachCallMessage(
+                        final String platform = defaultTargetPlatform == TargetPlatform.android ? 'android' : 'ios';
+                        const String pushEnvironment = kDebugMode ? 'development' : 'production';
+                        final AttachCallMessage attachCallMessage = AttachCallMessage(
                           method: SocketMethod.attachCall,
                           id: const Uuid().v4(),
                           params: Params(
@@ -1904,12 +1888,7 @@ class TelnyxClient {
                     _invalidateGatewayResponseTimer();
 
                     // Attempt reconnection if autoReconnect is enabled and retry limit not reached
-                    if (_autoReconnectLogin &&
-                        _connectRetryCounter < Constants.retryConnectTime) {
-                      _connectRetryCounter++;
-                      GlobalLogger().i(
-                        'Attempting reconnection :: attempt $_connectRetryCounter / ${Constants.retryConnectTime}',
-                      );
+                    if (_autoReconnectLogin && _connectRetryCounter < Constants.retryConnectTime) {
                       _attemptReconnection();
                     } else {
                       final error = TelnyxSocketError(
@@ -1928,19 +1907,13 @@ class TelnyxClient {
                     gatewayState = GatewayState.failWait;
 
                     // Attempt reconnection if autoReconnect is enabled and retry limit not reached
-                    if (_autoReconnectLogin &&
-                        _connectRetryCounter < Constants.retryConnectTime) {
-                      _connectRetryCounter++;
-                      GlobalLogger().i(
-                        'Attempting reconnection :: attempt $_connectRetryCounter / ${Constants.retryConnectTime}',
-                      );
+                    if (_autoReconnectLogin && _connectRetryCounter < Constants.retryConnectTime) {
                       _attemptReconnection();
                     } else {
                       _invalidateGatewayResponseTimer();
                       final error = TelnyxSocketError(
                         errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
-                        errorMessage:
-                            'Gateway registration has received fail wait response',
+                        errorMessage: 'Gateway registration has received fail wait response',
                       );
                       onSocketErrorReceived(error);
                     }
@@ -1986,22 +1959,19 @@ class TelnyxClient {
 
               // Handle updateMedia response - check the raw JSON data directly
               try {
-                final Map<String, dynamic> rawData =
-                    jsonDecode(data.toString());
+                final Map<String, dynamic> rawData = jsonDecode(data.toString());
                 if (rawData.containsKey('result') && rawData['result'] is Map) {
                   final resultMap = rawData['result'] as Map<String, dynamic>;
                   if (resultMap['action'] == 'updateMedia') {
                     GlobalLogger().i('Received updateMedia response');
 
-                    final updateMediaResponse =
-                        UpdateMediaResponse.fromJson(resultMap);
+                    final updateMediaResponse = UpdateMediaResponse.fromJson(resultMap);
 
                     // Find the call and handle the response
                     final callId = updateMediaResponse.callID;
                     final call = calls[callId];
                     if (call?.peerConnection != null) {
-                      await call!.peerConnection!
-                          .handleUpdateMediaResponse(updateMediaResponse);
+                      await call!.peerConnection!.handleUpdateMediaResponse(updateMediaResponse);
                     }
                   } else {
                     GlobalLogger().i('Not an updateMedia response');
@@ -2013,11 +1983,9 @@ class TelnyxClient {
             }
           } else if (messageJson.containsKey('method')) {
             //Received Telnyx Method Message
-            final ReceivedMessage clientReadyMessage =
-                ReceivedMessage.fromJson(messageJson);
+            final ReceivedMessage clientReadyMessage = ReceivedMessage.fromJson(messageJson);
             if (clientReadyMessage.voiceSdkId != null) {
-              GlobalLogger()
-                  .i('VoiceSdkID :: ${clientReadyMessage.voiceSdkId}');
+              GlobalLogger().i('VoiceSdkID :: ${clientReadyMessage.voiceSdkId}');
               _pushMetaData = PushMetaData(
                 callerNumber: null,
                 callerName: null,
@@ -2051,8 +2019,7 @@ class TelnyxClient {
                       _gatewayResponseTimer = Timer(
                         Duration(milliseconds: Constants.gatewayResponseDelay),
                         () {
-                          if (_registrationRetryCounter <
-                              Constants.retryRegisterTime) {
+                          if (_registrationRetryCounter < Constants.retryRegisterTime) {
                             if (_waitingForReg) {
                               _onMessage(data);
                             }
@@ -2060,10 +2027,8 @@ class TelnyxClient {
                           } else {
                             GlobalLogger().i('GATEWAY REGISTRATION TIMEOUT');
                             final error = TelnyxSocketError(
-                              errorCode:
-                                  TelnyxErrorConstants.gatewayTimeoutErrorCode,
-                              errorMessage:
-                                  TelnyxErrorConstants.gatewayTimeoutError,
+                              errorCode: TelnyxErrorConstants.gatewayTimeoutErrorCode,
+                              errorMessage: TelnyxErrorConstants.gatewayTimeoutError,
                             );
                             onSocketErrorReceived(error);
                           }
@@ -2082,15 +2047,13 @@ class TelnyxClient {
               case SocketMethod.invite:
                 {
                   GlobalLogger().i('INCOMING INVITATION :: $messageJson');
-                  final ReceivedMessage invite =
-                      ReceivedMessage.fromJson(messageJson);
+                  final ReceivedMessage invite = ReceivedMessage.fromJson(messageJson);
                   final message = TelnyxMessage(
                     socketMethod: SocketMethod.invite,
                     message: invite,
                   );
 
-                  final Call offerCall = _createCall()
-                    ..callId = invite.inviteParams?.callID;
+                  final Call offerCall = _createCall()..callId = invite.inviteParams?.callID;
                   updateCall(offerCall);
 
                   onSocketMessageReceived.call(message);
@@ -2124,8 +2087,7 @@ class TelnyxClient {
               case SocketMethod.attach:
                 {
                   GlobalLogger().i('ATTACH RECEIVED :: $messageJson');
-                  final ReceivedMessage invite =
-                      ReceivedMessage.fromJson(messageJson);
+                  final ReceivedMessage invite = ReceivedMessage.fromJson(messageJson);
                   final message = TelnyxMessage(
                     socketMethod: SocketMethod.attach,
                     message: invite,
@@ -2133,8 +2095,7 @@ class TelnyxClient {
 
                   // Preserve speakerphone state from existing call before reconnection
                   final existingCall = calls[invite.inviteParams?.callID];
-                  final bool wasSpeakerPhoneEnabled =
-                      existingCall?.speakerPhone ?? false;
+                  final bool wasSpeakerPhoneEnabled = existingCall?.speakerPhone ?? false;
                   GlobalLogger().i(
                     'ATTACH :: Preserving speakerphone state: $wasSpeakerPhoneEnabled',
                   );
@@ -2142,8 +2103,7 @@ class TelnyxClient {
                   //play ringtone for web
                   final Call offerCall = _createCall()
                     ..callId = invite.inviteParams?.callID
-                    ..speakerPhone =
-                        wasSpeakerPhoneEnabled; // Preserve the state
+                    ..speakerPhone = wasSpeakerPhoneEnabled; // Preserve the state
                   updateCall(offerCall);
 
                   onSocketMessageReceived.call(message);
@@ -2163,11 +2123,9 @@ class TelnyxClient {
               case SocketMethod.media:
                 {
                   GlobalLogger().i('MEDIA RECEIVED :: $messageJson');
-                  final ReceivedMessage mediaReceived =
-                      ReceivedMessage.fromJson(messageJson);
+                  final ReceivedMessage mediaReceived = ReceivedMessage.fromJson(messageJson);
                   if (mediaReceived.inviteParams?.sdp != null) {
-                    final Call? mediaCall =
-                        calls[mediaReceived.inviteParams?.callID];
+                    final Call? mediaCall = calls[mediaReceived.inviteParams?.callID];
                     if (mediaCall == null) {
                       GlobalLogger().d(
                         'Error : Call  is null from Media Message',
@@ -2187,13 +2145,10 @@ class TelnyxClient {
               case SocketMethod.answer:
                 {
                   GlobalLogger().i('INVITATION ANSWERED :: $messageJson');
-                  final ReceivedMessage inviteAnswer =
-                      ReceivedMessage.fromJson(messageJson);
-                  final Call? answerCall =
-                      calls[inviteAnswer.inviteParams?.callID];
+                  final ReceivedMessage inviteAnswer = ReceivedMessage.fromJson(messageJson);
+                  final Call? answerCall = calls[inviteAnswer.inviteParams?.callID];
                   if (answerCall == null) {
-                    GlobalLogger()
-                        .d('Error : Call  is null from Answer Message');
+                    GlobalLogger().d('Error : Call  is null from Answer Message');
                     _sendNoCallError();
                     return;
                   }
@@ -2252,10 +2207,8 @@ class TelnyxClient {
                   }
 
                   // Fall back to ReceivedMessage if ReceiveByeMessage parsing failed
-                  final ReceivedMessage bye =
-                      ReceivedMessage.fromJson(messageJson);
-                  final String? callId =
-                      byeMessage?.params?.callID ?? bye.inviteParams?.callID;
+                  final ReceivedMessage bye = ReceivedMessage.fromJson(messageJson);
+                  final String? callId = byeMessage?.params?.callID ?? bye.inviteParams?.callID;
 
                   final Call? byeCall = calls[callId];
                   if (byeCall == null) {
@@ -2284,8 +2237,7 @@ class TelnyxClient {
               case SocketMethod.ringing:
                 {
                   GlobalLogger().i('RINGING RECEIVED :: $messageJson');
-                  final ReceivedMessage ringing =
-                      ReceivedMessage.fromJson(messageJson);
+                  final ReceivedMessage ringing = ReceivedMessage.fromJson(messageJson);
                   final Call? ringingCall = calls[ringing.inviteParams?.callID];
                   if (ringingCall == null) {
                     GlobalLogger().d(
@@ -2329,14 +2281,11 @@ class TelnyxClient {
               case SocketMethod.aiConversation:
                 {
                   GlobalLogger().i('AI CONVERSATION RECEIVED :: $messageJson');
-                  final ReceivedMessage aiConversation =
-                      ReceivedMessage.fromJson(messageJson);
+                  final ReceivedMessage aiConversation = ReceivedMessage.fromJson(messageJson);
 
                   // Store widget settings if available
-                  if (aiConversation.aiConversationParams?.widgetSettings !=
-                      null) {
-                    _currentWidgetSettings =
-                        aiConversation.aiConversationParams!.widgetSettings;
+                  if (aiConversation.aiConversationParams?.widgetSettings != null) {
+                    _currentWidgetSettings = aiConversation.aiConversationParams!.widgetSettings;
                     GlobalLogger().i('Widget settings updated');
                   }
 
@@ -2354,10 +2303,8 @@ class TelnyxClient {
                 }
               case SocketMethod.candidate:
                 {
-                  GlobalLogger()
-                      .i('TRICKLE ICE CANDIDATE RECEIVED :: $messageJson');
-                  final Map<String, dynamic> candidateData =
-                      jsonDecode(data.toString());
+                  GlobalLogger().i('TRICKLE ICE CANDIDATE RECEIVED :: $messageJson');
+                  final Map<String, dynamic> candidateData = jsonDecode(data.toString());
 
                   // Extract params from the candidate data
                   final Map<String, dynamic>? params = candidateData['params'];
@@ -2375,18 +2322,15 @@ class TelnyxClient {
                   }
 
                   // Extract call ID using the utility method
-                  final String? callId =
-                      CandidateUtils.extractCallIdFromCandidate(params);
+                  final String? callId = CandidateUtils.extractCallIdFromCandidate(params);
                   if (callId == null) {
-                    GlobalLogger()
-                        .w('Could not extract call ID from candidate message');
+                    GlobalLogger().w('Could not extract call ID from candidate message');
                     break;
                   }
 
                   // Normalize the candidate string to handle "a=" prefix issue
                   final String candidateStr = params['candidate'] as String;
-                  final String normalizedCandidate =
-                      CandidateUtils.normalizeCandidateString(candidateStr);
+                  final String normalizedCandidate = CandidateUtils.normalizeCandidateString(candidateStr);
 
                   // Extract other required fields
                   final String sdpMid = params['sdpMid'] as String;
@@ -2403,21 +2347,17 @@ class TelnyxClient {
                 }
               case SocketMethod.endOfCandidates:
                 {
-                  GlobalLogger()
-                      .i('END OF CANDIDATES RECEIVED :: $messageJson');
-                  final Map<String, dynamic> endData =
-                      jsonDecode(data.toString());
+                  GlobalLogger().i('END OF CANDIDATES RECEIVED :: $messageJson');
+                  final Map<String, dynamic> endData = jsonDecode(data.toString());
 
                   // Extract call ID
-                  final String? callId =
-                      endData['params']?['dialogParams']?['callID'];
+                  final String? callId = endData['params']?['dialogParams']?['callID'];
 
                   if (callId != null) {
                     // Find the call and signal end of candidates
                     final Call? call = calls[callId];
                     if (call != null) {
-                      GlobalLogger()
-                          .i('End of candidates signaled for call: $callId');
+                      GlobalLogger().i('End of candidates signaled for call: $callId');
                     } else {
                       GlobalLogger().w(
                         'Received endOfCandidates for unknown call: $callId',
@@ -2576,16 +2516,9 @@ class TelnyxClient {
   /// This method is called when gateway registration fails and autoReconnect is enabled
   /// It respects the _autoReconnectLogin setting and _connectRetryCounter limits
   void _attemptReconnection() {
-    // Set reconnecting status
-    if (_connectionStatus != ConnectionStatus.reconnecting) {
-      _connectionStatus = ConnectionStatus.reconnecting;
-      onConnectionStateChanged?.call(_connectionStatus);
-    }
-
     // Check if autoReconnect is enabled
     if (!_autoReconnectLogin) {
-      GlobalLogger()
-          .i('AutoReconnect is disabled, not attempting reconnection');
+      GlobalLogger().i('AutoReconnect is disabled, not attempting reconnection');
       final error = TelnyxSocketError(
         errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
         errorMessage: 'AutoReconnect is disabled',
@@ -2607,36 +2540,33 @@ class TelnyxClient {
       return;
     }
 
+    _connectRetryCounter++;
     GlobalLogger().i(
       'Attempting reconnection $_connectRetryCounter/${Constants.retryConnectTime} (autoReconnect: $_autoReconnectLogin)',
     );
 
     // Add a small delay before attempting reconnection to avoid overwhelming the server
     // Use exponential backoff: base delay * (2 ^ retry_count)
-    final delayMs =
-        Constants.reconnectTimer * (1 << (_connectRetryCounter - 1));
-    Timer(Duration(milliseconds: delayMs), () {
-      if (_storedCredentialConfig != null) {
-        GlobalLogger().i(
-          'Attempting reconnection with credential config (attempt $_connectRetryCounter)',
-        );
-        // Use the existing _reconnectToSocket method for consistency
-        _reconnectToSocket();
-      } else if (_storedTokenConfig != null) {
-        GlobalLogger().i(
-          'Attempting reconnection with token config (attempt $_connectRetryCounter)',
-        );
-        // Use the existing _reconnectToSocket method for consistency
-        _reconnectToSocket();
-      } else {
-        GlobalLogger().e('No stored configuration available for reconnection');
-        final error = TelnyxSocketError(
-          errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
-          errorMessage: 'No stored configuration available for reconnection',
-        );
-        onSocketErrorReceived(error);
-      }
-    });
+    if (_storedCredentialConfig != null) {
+      GlobalLogger().i(
+        'Attempting reconnection with credential config (attempt $_connectRetryCounter)',
+      );
+      // Use the existing _reconnectToSocket method for consistency
+      _reconnectToSocket();
+    } else if (_storedTokenConfig != null) {
+      GlobalLogger().i(
+        'Attempting reconnection with token config (attempt $_connectRetryCounter)',
+      );
+      // Use the existing _reconnectToSocket method for consistency
+      _reconnectToSocket();
+    } else {
+      GlobalLogger().e('No stored configuration available for reconnection');
+      final error = TelnyxSocketError(
+        errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
+        errorMessage: 'No stored configuration available for reconnection',
+      );
+      onSocketErrorReceived(error);
+    }
   }
 
   /// Gets the current socket connection metrics
