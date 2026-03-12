@@ -3,7 +3,7 @@ class Constants {
 
   // TelnyxClient Gateway registration variables
   static const int retryRegisterTime = 3;
-  static const int retryConnectTime = 3;
+  static const int retryConnectTime = 10000000;
   static const int gatewayResponseDelay = 3000;
   static const int reconnectTimer = 2000;
 

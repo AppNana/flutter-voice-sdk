@@ -1184,11 +1184,6 @@ class TelnyxClient {
       return;
     }
 
-    if (_connectionStatus == ConnectionStatus.reconnecting) {
-      GlobalLogger().i('Already in reconnecting state, will not attempt to reconnect again');
-      return;
-    }
-
     // Set reconnecting status
     if (_connectionStatus != ConnectionStatus.reconnecting) {
       _connectionStatus = ConnectionStatus.reconnecting;
@@ -1790,7 +1785,7 @@ class TelnyxClient {
     }
 
     // General auto-reconnect for unexpected WebSocket drops (not initiated by user)
-    if (!_closed && _autoReconnectLogin && _connectionStatus != ConnectionStatus.reconnecting) {
+    if (!_closed && _autoReconnectLogin) {
       _attemptReconnection();
     }
   }
@@ -1889,7 +1884,8 @@ class TelnyxClient {
 
                     // Attempt reconnection if autoReconnect is enabled and retry limit not reached
                     if (_autoReconnectLogin && _connectRetryCounter < Constants.retryConnectTime) {
-                      _attemptReconnection();
+                      // close will auto reconnect
+                      txSocket.close();
                     } else {
                       final error = TelnyxSocketError(
                         errorCode: TelnyxErrorConstants.gatewayFailedErrorCode,
@@ -1908,7 +1904,8 @@ class TelnyxClient {
 
                     // Attempt reconnection if autoReconnect is enabled and retry limit not reached
                     if (_autoReconnectLogin && _connectRetryCounter < Constants.retryConnectTime) {
-                      _attemptReconnection();
+                      // close will auto reconnect
+                      txSocket.close();
                     } else {
                       _invalidateGatewayResponseTimer();
                       final error = TelnyxSocketError(
@@ -2524,6 +2521,13 @@ class TelnyxClient {
         errorMessage: 'AutoReconnect is disabled',
       );
       onSocketErrorReceived(error);
+      return;
+    }
+
+    if (_connectionStatus != ConnectionStatus.disconnected) {
+      GlobalLogger().i(
+        'Current connection status is $_connectionStatus, expected disconnected for reconnection. Will not attempt to reconnect.',
+      );
       return;
     }
 
