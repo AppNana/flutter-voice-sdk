@@ -497,8 +497,8 @@ class TelnyxClient {
   void _updateConnectionState(bool connected) {
     if (_connected != connected) {
       _connected = connected;
-      _updateConnectionStatus();
     }
+    _updateConnectionStatus();
   }
 
   /// Updates the connection status based on current connection and registration states
