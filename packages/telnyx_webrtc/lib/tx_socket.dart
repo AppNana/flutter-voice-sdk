@@ -24,7 +24,7 @@ class TxSocket {
 
   String hostAddress;
 
-  late WebSocket _socket;
+  WebSocket? _socket;
   late OnOpenCallback onOpen;
   late OnMessageCallback onMessage;
   late OnCloseCallback onClose;
@@ -49,7 +49,7 @@ class TxSocket {
       GlobalLogger().i('TxSocket :: connect : $hostAddress');
 
       _socket = await WebSocket.connect(hostAddress);
-      _socket
+      _socket!
         ..pingInterval = const Duration(seconds: 10)
         ..timeout(const Duration(seconds: 30));
 
@@ -62,7 +62,7 @@ class TxSocket {
       // Emit initial calculating state
       final initialMetrics = _calculateConnectionMetrics();
       onPing?.call(initialMetrics);
-      _socket.listen(
+      _socket!.listen(
         (dynamic data) {
           // Check if this is a ping/pong message
           if (_isPingMessage(data)) {
@@ -73,8 +73,8 @@ class TxSocket {
         onDone: () {
           _cleanPingIntervals();
           onClose.call(
-            _socket.closeCode ?? 0,
-            _socket.closeReason ?? 'Closed for unknown reason',
+            _socket?.closeCode ?? 0,
+            _socket?.closeReason ?? 'Closed for unknown reason',
           );
         },
       );
@@ -86,8 +86,8 @@ class TxSocket {
 
   /// Send data to the WebSocket server
   void send(dynamic data) {
-    if (_socket.readyState == WebSocket.open) {
-      _socket.add(data);
+    if (_socket != null && _socket!.readyState == WebSocket.open) {
+      _socket!.add(data);
       GlobalLogger().i('TxSocket :: Send : ${data?.toString().trim()}');
     } else {
       GlobalLogger().d('WebSocket not connected, message $data not sent');
@@ -97,7 +97,8 @@ class TxSocket {
   /// Close the WebSocket connection
   void close() {
     _cleanPingIntervals();
-    _socket.close();
+    _socket?.close();
+    _socket = null;
   }
 
   /// Checks if the received message is a ping message
@@ -175,32 +176,22 @@ class TxSocket {
       );
     }
 
-    final currentInterval =
-        _pingIntervals.isNotEmpty ? _pingIntervals.last : null;
-    final averageInterval = _pingIntervals.isNotEmpty
-        ? (_pingIntervals.reduce((a, b) => a + b) / _pingIntervals.length)
-            .round()
-        : null;
-    final minInterval = _pingIntervals.isNotEmpty
-        ? _pingIntervals.reduce((a, b) => a < b ? a : b)
-        : null;
-    final maxInterval = _pingIntervals.isNotEmpty
-        ? _pingIntervals.reduce((a, b) => a > b ? a : b)
-        : null;
+    final currentInterval = _pingIntervals.isNotEmpty ? _pingIntervals.last : null;
+    final averageInterval =
+        _pingIntervals.isNotEmpty ? (_pingIntervals.reduce((a, b) => a + b) / _pingIntervals.length).round() : null;
+    final minInterval = _pingIntervals.isNotEmpty ? _pingIntervals.reduce((a, b) => a < b ? a : b) : null;
+    final maxInterval = _pingIntervals.isNotEmpty ? _pingIntervals.reduce((a, b) => a > b ? a : b) : null;
 
     // Calculate jitter (standard deviation)
     int? jitter;
     if (_pingIntervals.length > 1 && averageInterval != null) {
-      final variance = _pingIntervals
-              .map((interval) => pow(interval - averageInterval, 2))
-              .reduce((a, b) => a + b) /
+      final variance = _pingIntervals.map((interval) => pow(interval - averageInterval, 2)).reduce((a, b) => a + b) /
           _pingIntervals.length;
       jitter = sqrt(variance).round();
     }
 
     // Calculate quality based on metrics
-    final quality =
-        SocketConnectionMetrics.calculateQuality(averageInterval, jitter);
+    final quality = SocketConnectionMetrics.calculateQuality(averageInterval, jitter);
 
     return SocketConnectionMetrics(
       intervalMs: currentInterval,

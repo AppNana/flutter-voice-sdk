@@ -404,11 +404,7 @@ class TelnyxClient {
       if (connectivityResult.contains(ConnectivityResult.none)) {
         GlobalLogger().i('No available network types');
         _handleNetworkLost();
-        return;
-      }
-
-      if (connectivityResult.contains(ConnectivityResult.mobile) ||
-          connectivityResult.contains(ConnectivityResult.wifi)) {
+      } else {
         GlobalLogger().i('Network available: ${connectivityResult.join(", ")}');
         _handleNetworkReconnection(NetworkReason.networkSwitch);
       }
@@ -497,6 +493,11 @@ class TelnyxClient {
   void _updateConnectionState(bool connected) {
     if (_connected != connected) {
       _connected = connected;
+      if (connected) {
+        _handleNetworkReconnection(NetworkReason.networkSwitch);
+      } else {
+        _handleNetworkLost();
+      }
     }
     _updateConnectionStatus();
   }
@@ -520,7 +521,6 @@ class TelnyxClient {
   }
 
   void _handleNetworkLost() {
-    _updateConnectionState(false);
     for (var call in activeCalls().values) {
       call.callHandler.onCallStateChanged.call(
         CallState.dropped.withNetworkReason(NetworkReason.networkLost),
@@ -546,7 +546,6 @@ class TelnyxClient {
     GlobalLogger().i(
       'Handling network reconnection (reason: $reason, autoReconnect: $_autoReconnectLogin)',
     );
-    _reconnectToSocket();
 
     for (var call in activeCalls().values) {
       if (call.callState.isDropped) {
@@ -1184,13 +1183,13 @@ class TelnyxClient {
       return;
     }
 
+    txSocket.close();
+
     // Set reconnecting status
     if (_connectionStatus != ConnectionStatus.reconnecting) {
       _connectionStatus = ConnectionStatus.reconnecting;
       onConnectionStateChanged?.call(_connectionStatus);
     }
-
-    txSocket.close();
 
     GlobalLogger().i(
       'Reconnecting to socket (autoReconnect: $_autoReconnectLogin, retryCount: $_connectRetryCounter)',
